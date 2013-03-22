@@ -37,7 +37,7 @@ dropbox = "./dropbox/"
 #please choose a key. note: this program is not meant to protect
 #local files. everyone with access to your computer can get the
 #key out of ram anyway. hence why you have to choose it here.
-key = 1234567890123456
+key = "1234567890123456"
 #
 #------------------------------------------------------------------------------------------------
 #

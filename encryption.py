@@ -37,7 +37,7 @@ under public domain
 import os, random, struct, configuration
 from Crypto.Cipher import AES
 from Crypto.Hash import MD5
-def Encrypt (chunksize, key, sourcepath, destpath):
+def Encrypt (chunksize, key, local, dropbox):
     """  
     Encypts the file "source/filename" with AES and saves it to 
     "destination/filename". 
@@ -52,43 +52,43 @@ def Encrypt (chunksize, key, sourcepath, destpath):
     
     key: the AES key that should be 16,24 or 32 bytes long. 
     
-    sourcepath: complete path of the source file
+    local: complete path of the source file
     
-    destpath: complete path of the destination file
+    dropbox: complete path of the destination file
     """
-    filesize = os.path.getsize(sourcepath)
+    filesize = os.path.getsize(local)
     init_vector= ''.join(chr(random.randint(0, 0xFF)) for i in range(16))
     encryptobject = AES.new(key, AES.MODE_CBC, init_vector)
-    with open(sourcepath, 'rb') as sourceobj:
-        with open(destpath, 'wb') as destobj:
-            destobj.write(struct.pack('<Q', filesize))
-            destobj.write(init_vector)
+    with open(local, 'rb') as localobj:
+        with open(dropbox, 'wb') as dropboxobj:
+            dropboxobj.write(struct.pack('<Q', filesize))
+            dropboxobj.write(init_vector)
             while True:
-                chunk = sourceobj.read(chunksize)
+                chunk = localobj.read(chunksize)
                 if len(chunk) == 0:
                     break
                 elif len(chunk) % 16 != 0:
                     chunk += ' ' * (16 - len(chunk) % 16)
 
-                destobj.write(encryptobject.encrypt(chunk))
+                dropboxobj.write(encryptobject.encrypt(chunk))
             
             
-def Decrypt (chunksize, key, sourcepath, destpath):
+def Decrypt (chunksize, key, local, dropbox):
     """decrypts a file using AES.
     variables like encrypt
-    so destpath is for example /Dropbox/file
+    so dropbox is for example /Dropbox/file
     """
-    with open(destpath, 'rb') as destobj:
-        filesize = struct.unpack('<Q', destobj.read(struct.calcsize('Q')))[0]
-        init_vector = destobj.read(16)
+    with open(dropbox, 'rb') as dropboxobj:
+        filesize = struct.unpack('<Q', dropboxobj.read(struct.calcsize('Q')))[0]
+        init_vector = dropboxobj.read(16)
         decryptobject = AES.new(key, AES.MODE_CBC, init_vector)
-        with open(sourcepath, 'wb') as sourceobj:
+        with open(local, 'wb') as localobj:
             while True:
-                chunk = destobj.read(chunksize)
+                chunk = dropboxobj.read(chunksize)
                 if len(chunk) == 0:
                     break
-                sourceobj.write(decryptobject.decrypt(chunk))
-            sourceobj.truncate(filesize)
+                localobj.write(decryptobject.decrypt(chunk))
+            localobj.truncate(filesize)
 
 def Hash (path):
     """returns MD5 hash of a file, doesnt need to be secure, hence MD5"""

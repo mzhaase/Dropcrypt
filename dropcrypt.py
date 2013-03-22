@@ -3,8 +3,10 @@ ALPHA VERSION
 
 UNTESTED! SHOULD NOT BE TRUSTED FOR IMPORTANT DATA!
 
-This is the main script. Monitors changes in local and dropbox
-folders, and then either decrypts or encrypts the changed files.
+This is the main script. Syncs files on first startup. Monitors 
+changes in local and dropbox folders, and then either decrypts or 
+encrypts the changed files, also moves, creates or deletes files 
+and folders, so both folders stay synced.
 Utilizes watchdog module.
 
 Copyright 2013 Mattis Zbigniew Haase
@@ -47,26 +49,22 @@ class Handler (FileSystemEventHandler):
             localpath = os.path.realpath("%s%s" % (configuration.local, filename))
             if event.src_path.startswith(os.path.realpath(configuration.local)): 
                 #if local folder was changed
-                if os.path.isfile(dropboxpath): 
-                    #if there already is a file with the same name in dropboxfolder
-                    if (os.path.getmtime(dropboxpath)-os.path.getmtime(localpath)) < 0:
-                        #compare modified times. if DB file is younger, return
-                        print "return" 
-                        return
+                if os.path.isfile(dropboxpath) and ((os.path.getmtime(dropboxpath)-os.path.getmtime(localpath)) < 0): 
+                    #if there already is a file with the same name in dropboxfolder, and db file is younger
+                    print "return" 
+                    return
                 else:
                     print "encrypt"
-                    encryption.Encrypt(configuration.chunksize,  configuration.key,  event.src_path,  dropboxpath)
+                    encryption.Encrypt(configuration.chunksize,  configuration.key,  localpath,  dropboxpath)
             if event.src_path.startswith(os.path.realpath(configuration.dropbox)):
                 #if dropboxfolder was changed
-                if os.path.isfile(localpath):
-                    #if there already is a file called like this in the local folder
-                    if (os.path.getmtime(dropboxpath)-os.path.getmtime(localpath)) > 0:
-                        #if the local file is younger, return.
-                        print "return"
-                        return
+                if os.path.isfile(localpath) and ((os.path.getmtime(dropboxpath)-os.path.getmtime(localpath)) > 0):
+                    #if there already is a file called like this in the local folder, and local file is younger
+                    print "return"
+                    return
                 else:
                     print "decrypt"
-                    encryption.Decrypt(configuration.chunksize,  configuration.key,  localpath,  event.src_path)
+                    encryption.Decrypt(configuration.chunksize,  configuration.key,  localpath,  dropboxpath)
         else:
             return
             
