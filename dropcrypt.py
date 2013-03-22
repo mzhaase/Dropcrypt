@@ -74,25 +74,21 @@ class Handler (FileSystemEventHandler):
         print "moved"
         if event.src_path.startswith(os.path.realpath(configuration.dropbox)):
             #if a file was moved on the dropbox
-            src_path=event.src_path
-            dest_path=event.dest_path
             #we replace the /home/bla/dropbox/ with home/bla/local/
-            src_path.replace(os.path.realpath(configuration.dropbox),  os.path.realpath(configuration.local))
-            dest_path.replace(os.path.realpath(configuration.dropbox),  os.path.realpath(configuration.local))
-            #shazam
-            shutil.move(src_path,  dest_path)
+            src_path = event.src_path.replace(os.path.realpath(configuration.dropbox),  os.path.realpath(configuration.local))
+            dest_path = event.dest_path.replace(os.path.realpath(configuration.dropbox),  os.path.realpath(configuration.local))
+            if os.path.exists(src_path):
+                #final check if the file or directory actually exists
+                #shazam
+                shutil.move(src_path,  dest_path)
         if event.src_path.startswith(os.path.realpath(configuration.local)):
             #if a file was moved on /local
-            #print ("src %s" % event.src_path)
-            #print ("dest %s" % event.dest_path)
-            src_path=event.src_path
-            dest_path=event.dest_path
-            src_path=src_path.replace(os.path.realpath(configuration.local),  os.path.realpath(configuration.dropbox))
-            dest_path=dest_path.replace(os.path.realpath(configuration.local),  os.path.realpath(configuration.dropbox))
-            #shazam
-            #print ("newsrc %s" % src_path)
-            #print ("newdest %s" % dest_path)
-            shutil.move(src_path,  dest_path)
+            src_path=event.src_path.replace(os.path.realpath(configuration.local),  os.path.realpath(configuration.dropbox))
+            dest_path=event.dest_path.replace(os.path.realpath(configuration.local),  os.path.realpath(configuration.dropbox))
+            if os.path.exists(src_path):
+                #final check if the file or directory actually exists
+                #shazam
+                shutil.move(src_path,  dest_path)
         else:
             return
             
