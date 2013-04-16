@@ -45,7 +45,6 @@ import shutil
 
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
-from watchdog.utils.dirsnapshot import DirectorySnapshot,  DirectorySnapshotDiff
 
 import configuration
 import encryption
@@ -60,12 +59,12 @@ class _Handler (FileSystemEventHandler):
             (sourcepath)): 
             if event.is_directory:
                 os.makedirs(event.src_path.replace
-                (sourcepath, destinationpath))
-        if (event.src_path.startswith
+                        (sourcepath, destinationpath))
+        elif (event.src_path.startswith
             (destinationpath)): 
             if event.is_directory:
                 os.makedirs(event.src_path.replace
-                (destinationpath, sourcepath))
+                        (destinationpath, sourcepath))
     
     def on_deleted(self,  event):
         """
@@ -76,7 +75,7 @@ class _Handler (FileSystemEventHandler):
         filename = os.path.basename(event.src_path)
         if event.src_path.startswith(sourcepath): 
             path = event.src_path.replace(sourcepath, 
-                                          destinationpath)
+                    destinationpath)
             #if something in sourcefolder was changed
             if not os.path.exist(path):
                 #if there is no file to be deleted
@@ -85,9 +84,9 @@ class _Handler (FileSystemEventHandler):
                 print ("deleting %s in destination" % 
                        (filename))
                 os.remove(path)
-        if event.src_path.startswith(destinationpath): 
+        elif event.src_path.startswith(destinationpath): 
             path = event.src_path.replace(destinationpath, 
-                                          sourcepath)
+                    sourcepath)
             #if something in the destination was changed
             if not os.path.exist(path):
                 #if there is no file to be deleted
@@ -106,10 +105,10 @@ class _Handler (FileSystemEventHandler):
             if event.src_path.startswith(sourcepath): 
                 #if source folder was changed
                 path = event.src_path.replace(sourcepath, 
-                                              destinationpath)
+                        destinationpath)
                 if (os.path.isfile(destinationpath) and 
-                ((os.path.getmtime(destinationpath) -
-                  os.path.getmtime(sourcepath)) < 0)): 
+                        (os.path.getmtime(destinationpath) >
+                        os.path.getmtime(sourcepath))): 
                     """if there already is a file with the same 
                     name in destinationfolder, and db file 
                     is younger"""
@@ -117,15 +116,15 @@ class _Handler (FileSystemEventHandler):
                     return
                 else:
                     print ("encrypting %s" % (filename))
-                    encryption.Encrypt(event.src_path,
-                                       path,  key)
-            if event.src_path.startswith(destinationpath):
+                    encryption.encrypt(event.src_path,
+                            path,  key)
+            elif event.src_path.startswith(destinationpath):
                 #if destinationfolder was changed
                 path = event.src_path.replace(
-                                    destinationpath, sourcepath)
+                        destinationpath, sourcepath)
                 if (os.path.isfile(sourcepath) and 
-                ((os.path.getmtime(destinationpath) -
-                  os.path.getmtime(sourcepath)) > 0)):
+                        (os.path.getmtime(destinationpath) <
+                        os.path.getmtime(sourcepath))):
                     #if there already is a file called like 
                     #this in the source folder, and source 
                     #file is younger
@@ -133,8 +132,8 @@ class _Handler (FileSystemEventHandler):
                     return
                 else:
                     print ("decrypting %s" % (filename))
-                    encryption.Decrypt(path, 
-                                       event.src_path,  key)
+                    encryption.decrypt(path, 
+                            event.src_path,  key)
         else:
             return
     
@@ -144,26 +143,26 @@ class _Handler (FileSystemEventHandler):
             #we replace the /home/bla/destination/ with
             #home/bla/source/
             src_path = event.src_path.replace(
-                                    destinationpath,  sourcepath)
+                    destinationpath,  sourcepath)
             dest_path = event.dest_path.replace(
-                                    destinationpath,  sourcepath)
+                    destinationpath,  sourcepath)
             if os.path.exists(src_path):
                 #final check if the file or directory 
                 #actually exists
                 print ("moving %s to %s"%(src_path,
-                                          dest_path))
+                        dest_path))
                 shutil.move(src_path,  dest_path)
-        if event.src_path.startswith(sourcepath):
+        elif event.src_path.startswith(sourcepath):
             #if a file was moved on /source
             src_path=event.src_path.replace(
-                                    sourcepath,  destinationpath)
+                    sourcepath,  destinationpath)
             dest_path=event.dest_path.replace(
-                                    sourcepath,  destinationpath)
+                    sourcepath,  destinationpath)
             if os.path.exists(src_path):
                 #final check if the file or directory 
                 #actually exists
                 print ("moving %s to %s"%(src_path,
-                                          dest_path))
+                        dest_path))
                 shutil.move(src_path,  dest_path)
         else:
             return
@@ -187,61 +186,170 @@ def get_key():
     are revealed
     """
     global key
-    if configuration.keyfile=="":
+    if len(configuration.keyfile)==0:
         key = input("Please enter your password: ")
+        for i in range (0, 999):
+            key = hashlib.sha256(key).digest()
     else:
         with open (keypath,  'r') as keyfileobj:
             key = keyfileobj.read()
             key = key.strip()
-    for i in range (0, 999):
-       key = hashlib.sha256(key).digest()
         
 def sync():
     """
     syncs two directories. called once on start.
     """
     destinationsnapshotobj = DirectorySnapshot(
-                                               destinationpath, True)
+            destinationpath, True)
     sourcesnapshotobj = DirectorySnapshot(
-                                               sourcepath,  True)
+            sourcepath,  True)
+    """
+    diffobj is the difference between the two folders
+    
+    created are all the files and dirs that exist on the
+    destinationfolder but not on the sourcefolder
+    
+    deleted are all the files and dirs that exist on the
+    sourcefolder, but not the destinationfolder
+    """
     diffobj = DirectorySnapshotDiff(
-            destinationsnapshotobj,  sourcesnapshotobj)
-            
-    Lfiles_created = diffobj.files_created
-    Lfiles_moved = diffobj.files_moved
-    Lfiles_deleted = diffobj.files_deleted
-    Lfiles_modified = diffobj.files_modified
-    Ldirs_created = diffobj.dirs_created
-    Ldirs_moved = diffobj.dirs_moved
-    Ldirs_deleted = diffobj.dirs_deleted
-    Ldirs_modified = diffobj.dirs_modified
+            sourcesnapshotobj,  destinationsnapshotobj)
+    print ("Syncing %s and %s" %  (sourcepath, 
+                                   destinationpath))
+    for i in diffobj.dirs_created:
+        if i.startswith(sourcepath):
+            dest_path = i.replace(sourcepath, 
+                                  destinationpath)
+            if not os.path.isdir(dest_path):
+                os.makedirs(dest_path)
+                print ("Sync: making dir: %s" % 
+                       dest_path)
+        if i.startswith(destinationpath):
+            src_path = i.replace(destinationpath, 
+                                 sourcepath)
+            if not os.path.isdir(src_path):
+                os.makedirs(src_path)
+                print ("Sync: making dir: %s" % 
+                       src_path)
+    for i in diffobj.dirs_moved:
+        if i[0].startswith(sourcepath):
+            src_path = i[0].replace(sourcepath, 
+                                    destinationpath)
+            dest_path = i[1].replace(sourcepath, 
+                                  destinationpath)
+            shutil.move(src_path,  dest_path)
+            print ("Sync: move %s to %s" % (src_path, 
+                                            dest_path))
+        if i[0].startswith(destinationpath):
+            src_path = i[0].replace(destinationpath, 
+                                    sourcepath)
+            dest_path = i[1].replace(destinationpath, 
+                                     sourcepath)
+            shutil.move(src_path,  dest_path)
+            print ("Sync: move %s to %s" % (src_path, 
+                                            dest_path))
+    for i in diffobj.dirs_deleted:
+        if i.startswith(sourcepath):
+            dest_path = i.replace(sourcepath, 
+                                  destinationpath)
+            if os.path.isdir(dest_path):
+                shutil.rmtree(dest_path)
+        if i.startswith(destinationpath):
+            src_path = i.replace(destinationpath, 
+                                  sourcepath)
+            if os.path.isdir(src_path):
+                shutil.rmtree(src_path)
+    for i in diffobj.files_created:
+        if i.startswith(sourcepath):
+            dest_path = i.replace(sourcepath, 
+                             destinationpath)
+                #final check if file really exits
+            if os.path.isfile(i):
+                encryption.encrypt(i, dest_path, key)
+                print ("Sync: encrypting %s" % i)
+        if i.startswith(destinationpath):
+            src_path = i.replace(destinationpath, 
+                               sourcepath)
+                #final check if file really exists
+            if os.path.isfile(i):
+                encryption.decrypt(src_path, i, key)
+                print ("Sync: decrypting %s" % i)
+    for i in diffobj.files_modified:
+        if i.startswith(sourcepath):
+            dest_path = i.replace(sourcepath, 
+                             destinationpath)
+            if os.path.isfile(i):
+                encryption.encrypt(i, dest_path, key)
+                print ("Sync: encrypting %s" % i)
+        if i.startswith(destinationpath):
+            src_path = i.replace(destinationpath, 
+                               sourcepath)
+            if os.path.isfile(i):
+                encryption.decrypt(src_path, i, key)
+                print ("Sync: decrypting %s" % i)
+    for i in diffobj.files_moved:
+        #every entry is a tupel [source,destination]
+        if i[0].startswith(sourcepath):
+            src_path = i[0].replace(destinationpath, 
+                               sourcepath)
+            dest_path = i[1].replace(sourcepath, 
+                             destinationpath)
+            if os.path.isfile(src_path):
+                shutil.move(src_path,  dest_path)
+                print ("Sync: moving %s to %s" %(
+                                             src_path,  dest_path))
+        if i[0].startswith(destinationpath):
+            src_path = i[0].replace(destinationpath, 
+                               sourcepath)
+            dest_path = i[1].replace(sourcepath, 
+                             destinationpath)
+            if os.path.isfile(src_path):
+                shutil.move(src_path,  dest_path)
+                print ("Sync: moving %s to %s" %(
+                                             src_path,  dest_path))
+    for i in diffobj.files_deleted:
+        if i.startswith(sourcepath):
+            dest_path = i.replace(sourcepath, 
+                                  destinationpath)
+            if os.path.isfile(dest_path):
+                os.remove(dest_path)
+                print ("Sync: deleting %s" % dest_path)
+        if i.startswith(destinationpath):
+            src_path = i.replace(destinationpath,
+                                 sourcepath)
+            if os.path.isfile(src_path):
+                os.remove(src_path)
+                print ("Sync: deleting %s" % src_path)
+    print ("Syncing complete!")
 
 
 def main():
     global destinationpath
     global sourcepath
     global keypath
-    if not configuration.keyfile == "":
+    global version
+    if not len(configuration.keyfile) == 0:
         keypath = os.path.realpath(
-                                configuration.keyfile)
+                configuration.keyfile)
     destinationpath = os.path.realpath(
-                                configuration.destination)
+            configuration.destination)
     sourcepath = os.path.realpath(
-                                configuration.source)
+            configuration.source)
+    version="VERSION0.1BUILD0001"
     get_key()
     sync()
     event_handler = _Handler()
     observer = Observer()
     observer.schedule(event_handler, 
-                      path=sourcepath, recursive=True)
+            path=sourcepath, recursive=True)
     observer.schedule(event_handler, 
-                      path=destinationpath, recursive=True)
+            path=destinationpath, recursive=True)
     observer.start()
     try:
         while 1:
             time.sleep(1)
     except keyboardInterrupt:
-           observer.stop()
+        observer.stop()
     observer.join()
         
 if __name__ == '__main__':
