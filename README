@@ -1,0 +1,59 @@
+Thank you for downloading dropcrypt.
+Dropcrypt is open source software developed
+by Mattis Zbigniew Haase.
+
+Dropcrypt is currently in ALPHA, it SHOULD NOT
+BE USED FOR SENSITIVE DATA. USE THIS SOFTWARE
+AT YOUR OWN RISK. I DO NOT TAKE ANY RESPONSI-
+BILITY FOR DAMAGE CAUSED BY THIS SOFTWARE
+
+THE POSSIBILITY OF DATA LOSS EXISTS, BACKUP
+YOUR DATA
+
+Seriously, this thing basically sucks in the current 
+version, it might cause your computer to explode or
+something
+
+
+Install:
+
+1. unpack everything into a folder. Apparently
+you already did that because you are reading
+this
+2. open the config.ini
+3. make a new folder where your UNENCRYPTED
+files should be, this CANNOT BE INSIDE YOUR
+DROPBOX FOLDER.
+4. Copy the entire content of your dropboxfolder into
+your local folder
+5. empty your dropboxfolder.
+6. in the config.ini under 'local' put the COMPLETE
+PATH TO THIS LOCAL FOLDER i.e. local=C:\local
+7. under 'destination' put your dropbox folder, i.e.
+destination=C:\dropbox
+8. save the config file
+9. open the file called "keyfile"
+10. simply type your password in. length is the most
+important factor. the password has to be the same
+on all your machines or you might destroy your data.
+11. Install python 2.7
+12. run a commandline, go to your dropcrypt 
+folder and type "python dropcrypt.py"
+13. thats it, its running, wait until sync is comp-
+lete before doing stuff.
+14. DONT CLOSE THE WINDOW. Otherwise, dataloss 
+might occur. There is not really a way to securely
+close the program at the moment. Just make sure
+that nothing is writing to your local folder at the 
+moment.
+
+
+
+This software is open source and written as 
+verbose and clear as possible so even progra-
+mming illeterate people have a chance to under-
+stand what its doing. I feel it is important that
+everybody understands his own security-
+critical software.
+
+Have fun.

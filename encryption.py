@@ -40,7 +40,7 @@ from Crypto.Cipher import AES
 
 import configuration
 
-def Encrypt (source, destination,  key):
+def encrypt (source, destination,  key):
     """  
     Encypts the file "source/filename" with AES and 
     saves it to "destination/filename". 
@@ -55,42 +55,47 @@ def Encrypt (source, destination,  key):
     
     key: 32 byte string
     """
-    filesize = os.path.getsize(local)
-    init_vector= ''.join(chr(random.randint(0, 0xFF))
-                                            for i in range(16))
+    filesize = os.path.getsize(source)
+    init_vector = ''.join(chr(
+            random.randint(0, 0xFF)) for i in range(16))
     encryptobject = AES.new(
-                            key, AES.MODE_CBC, init_vector)
-    with open(local, 'rb') as localobj:
-        with open(dropbox, 'wb') as dropboxobj:
-            dropboxobj.write(struct.pack('<Q', filesize))
-            dropboxobj.write(init_vector)
+            key, AES.MODE_CBC, init_vector)
+    with open(source, 'rb') as sourceobj:
+        with open(destination, 'wb') as destinationobj:
+            destinationobj.write(
+                    struct.pack('<Q', filesize))
+            destinationobj.write(init_vector)
             while True:
-                chunk = localobj.read(
-                                      configuration.chunksize)
+                chunk = sourceobj.read(
+                        configuration.chunksize)
                 if len(chunk) == 0:
                     break
                 elif len(chunk) % 16 != 0:
                     chunk += ' ' * (16 - len(chunk) % 16)
-
-                dropboxobj.write(
-                                 encryptobject.encrypt(chunk))            
+                destinationobj.write(
+                        encryptobject.encrypt(chunk))            
             
-def Decrypt (source, destination, key):
-    """decrypts a file using AES.
+def decrypt (source, destination, key):
+    """
+    decrypts a file using AES.
     variables like encrypt
     """
-    with open(dropbox, 'rb') as dropboxobj:
-        filesize = (struct.unpack('<Q', 
-               dropboxobj.read(struct.calcsize('Q')))[0])
-        init_vector = dropboxobj.read(16)
-        decryptobject = AES.new(key,
-                                AES.MODE_CBC, init_vector)
-        with open(local, 'wb') as localobj:
-            while True:
-                chunk = dropboxobj.read(
-                                        configuration.chunksize)
-                if len(chunk) == 0:
-                    break
-                localobj.write(
-                               decryptobject.decrypt(chunk))
-            localobj.truncate(filesize)
+    try:
+        with open(destination, 'rb') as destinationobj:
+            filesize = (struct.unpack('<Q', 
+                   destinationobj.read(
+                            struct.calcsize('Q')))[0])
+            init_vector = destinationobj.read(16)
+            decryptobject = AES.new(key,
+                    AES.MODE_CBC, init_vector)
+            with open(source, 'wb') as sourceobj:
+                while True:
+                    chunk = destinationobj.read(
+                            configuration.chunksize)
+                    if len(chunk) == 0:
+                        break
+                    sourceobj.write(
+                            decryptobject.decrypt(chunk))
+                sourceobj.truncate(filesize)
+    except ValueError:
+        print("couldnt read file.")
