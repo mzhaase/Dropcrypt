@@ -36,7 +36,7 @@ import os
 import random
 import struct
 
-from Crypto.Cipher import AES
+import AES
 
 import configuration
 
